@@ -10,30 +10,61 @@
 
 # Automation Capacity Atlas
 
-Forecasts monthly automation usage, finds the cheapest plan tier that fits, and ranks which rules to migrate off-platform. Change usage, the day of the month and the migration slider to model the renewal decision.
+A multi-page planning app for metered automation platforms. It forecasts monthly usage, finds the cheapest plan tier that fits, inventories every automation rule by consumption, and models how much you save by porting the heaviest rules to unmetered webhooks.
 
-> **Portfolio rebuild.** This is a from-scratch recreation of a production system I designed and run, rebuilt with **fictional data** and no client names, code or branding. The live demo runs entirely in the browser.
+> **Portfolio rebuild.** A from-scratch recreation of a production system I designed and run. It uses **fictional data**, with no client names, code or branding.
 
-## The problem
-A large automation add-on (~$900/month) was up for renewal. The platform's usage report only showed month-to-date, support couldn't supply history, and there was no API for automation definitions, so nobody could tell whether a cheaper tier would fit.
+## ✨ Features
+- **Overview:** month-to-date actions, projected month-end, ceiling used, current add-on cost and a live recommendation
+- **Daily history:** SVG bar chart per day with a month picker, peak day and daily average (three months of history)
+- **Plan & tiers simulator:** pick the current tier and negotiated discount, and see which tiers fit the projection
+- **Rule inventory:** 25 rules with search, space/type filters, sorting by consumption, runs or ID, and a detail modal (pause/resume, mark for migration)
+- **Migration planner:** select rules or auto-pick the top port candidates, then see actions removed, new projection, the tier that now fits and annual savings
+- **Spaces breakdown:** consumption and external-call counts per space
+- **Month-end snapshots:** record the official counter before it resets on the 1st, with month-over-month change and validation
+- **Activity log**, persisted state, light/dark theme
 
-## Impact in production
-Built an independent usage history, inventoried 338 automation rules (476 actions per pass), and found that the top 14 rules drove ~58% of consumption. That turned a renewal guess into a data-backed downgrade and migration plan.
+## 🧭 Try it
+1. Open the **[live demo](https://naekitakadoportfolio.github.io/automation-capacity-atlas/)**. The Overview says no cheaper tier fits.
+2. Go to *Migration planner* → **Auto-select top candidates** and watch the projection drop
+3. Open *Plan & tiers* to see the cheaper tier now fits
 
-## What it demonstrates
-| Capability | How |
-|---|---|
-| Usage projection | Month-to-date → full-month forecast |
-| Tier fit analysis | Cheapest tier that covers projected volume, with annual savings |
-| Scenario modeling | Slider shows the impact of migrating rules off-platform |
-| Automation inventory | Rules ranked by consumption, flagged as port candidates |
-| Data capture | Webhooks plus a Chrome extension where no API exists |
+## 🏗 Production architecture
+| Layer | Production | This demo |
+|---|---|---|
+| Usage capture | Platform webhooks + a Chrome extension reading the activity log (no usage API exists) | Seeded history |
+| Storage | Google Sheets (ACTIVITY, INVENTORY, SNAPSHOTS) | `localStorage` |
+| Inventory | Parsed automation atlas joined to run counts | Seeded rules |
+| UI | Apps Script HTML Service web app with a lazy-loaded atlas endpoint | Static SPA |
 
-## Production architecture
-Webhooks → Apps Script ingest → Sheets (ACTIVITY, INVENTORY) · Chrome extension scrapes activity log · lazy-loaded Atlas endpoint · HTML dashboard
+## 📁 Project structure
+```
+automation-capacity-atlas/
+├── index.html        # built app (shell + app code, single file)
+├── src/
+│   ├── app.js        # views, state seed, business logic
+│   └── app.json      # title, navigation, theme, storage key
+├── assets/banner.svg # README banner
+├── README.md
+└── LICENSE
+```
 
-## Try it
-Open the **[live demo](https://naekitakadoportfolio.github.io/automation-capacity-atlas/)** or run `index.html` locally. No install needed.
+## 🚀 Run locally
+No build step is needed to run it. Open `index.html`, or serve the folder:
+```bash
+python3 -m http.server 8000   # then visit http://localhost:8000
+```
+`index.html` is generated from `src/` by a small shared shell (hash router, persisted state, modals, toasts, light/dark theme).
+
+## 🧩 Implementation notes
+- `projection()` = month-to-date ÷ days elapsed × 30
+- `fitTier(v)` returns the first tier whose base + add-on ceiling covers `v`
+- Migration savings = Σ(runs × actions per run) of selected rules ÷ total consumption, applied to the projection
+
+## 🗺 Roadmap
+- CSV import of the platform's activity export
+- Alert when the projection crosses 90% of the ceiling
+- Per-rule cost attribution by team
 
 ---
 <p align="center"><sub>Built by <b>Nae Kitakado</b>, AI Automation Consultant · <a href="https://www.linkedin.com/in/nae-k-203194265">LinkedIn</a> · <a href="https://sider.ai/agents/web-creator/share/695ea81100a621619985fdfb">Portfolio</a> · open to retainer &amp; part-time consulting</sub></p>

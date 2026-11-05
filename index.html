@@ -1,7 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Automation Capacity Atlas · Nae Kitakado</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
+<title>Automation Capacity Atlas · Demo</title><meta name="description" content="Automation usage forecasting, tier fit and rule inventory">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><style>
 :root{--bg1:#EAF4FA;--bg2:#D7EAF5;--ink:#14384E;--mauve:#4F6E80;--cocoa:#1D4C93;--sky:#89CDE7;--card:rgba(255,255,255,.62);--line:rgba(20,56,78,.14);--blush:rgba(137,205,231,.22);--rose:#89CDE7;--ok-bg:#DDF1E4;--ok:#1E5A36;--warn-bg:#FCEBC8;--warn:#7A4E12;--bad-bg:#F8D7DA;--bad:#8A2C3A}
 [data-theme=dark]{--bg1:#0B1E2A;--bg2:#14384E;--ink:#E6F2F8;--mauve:#9BB8C8;--card:rgba(20,56,78,.55);--line:rgba(137,205,231,.18);--blush:rgba(137,205,231,.12);--cocoa:#89CDE7;--ok-bg:rgba(46,160,90,.2);--ok:#8FE0AE;--warn-bg:rgba(230,160,40,.2);--warn:#F5C97A;--bad-bg:rgba(220,80,90,.2);--bad:#F5A3AC}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,'Segoe UI',system-ui,sans-serif;color:var(--ink);background:linear-gradient(160deg,var(--bg1),var(--bg2));background-attachment:fixed;min-height:100vh}
@@ -26,25 +25,105 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 pre{background:#0B1E2A;color:#CFE8F4;border-radius:10px;padding:12px;font-size:12px;overflow:auto;max-height:320px}
 footer{text-align:center;font-size:12px;color:var(--mauve);margin-top:28px}a{color:var(--cocoa)}.muted{color:var(--mauve);font-size:13px}
 .hero:after{display:none}
-</style></head><body><div class="wrap"><div class="topbar"><span class="brand">OPERATIONS CONSOLE · DEMO</span><button class="ghost" id="themeBtn" style="margin:0;padding:6px 12px" onclick="(()=>{const h=document.documentElement,n=h.dataset.theme==='dark'?'light':'dark';h.dataset.theme=n;try{localStorage.setItem('demoTheme',n)}catch(e){};themeBtn.textContent=n==='dark'?'☀️ Light':'🌙 Dark'})()">🌙 Dark</button></div>
-<script>try{const s=localStorage.getItem('demoTheme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=s;addEventListener('DOMContentLoaded',()=>themeBtn.textContent=s==='dark'?'☀️ Light':'🌙 Dark')}catch(e){}</script>
-<div class="hero"><span class="tag">LIVE DEMO · FICTIONAL DATA</span><h1>Automation Capacity Atlas</h1><p>Forecasts monthly automation usage, finds the cheapest plan tier that fits, and ranks which rules to migrate off-platform. Change usage, the day of the month and the migration slider to model the renewal decision.</p></div><div class="grid"><div class="card"><h2>1 · Usage inputs</h2>
-<label>Actions used month-to-date</label><input id="used" type="number" value="198879" oninput="draw()">
-<label>Day of month</label><input id="day" type="range" min="1" max="30" value="26" oninput="dv.textContent=this.value;draw()"> <span id="dv" class="muted">26</span>
-<label>Actions you plan to migrate off-platform (%)</label><input id="mig" type="range" min="0" max="80" value="0" oninput="mv.textContent=this.value+'%';draw()"> <span id="mv" class="muted">0%</span></div>
-<div class="card"><h2>2 · Recommendation</h2><div id="rec"></div></div></div>
-<div class="card" style="margin-top:18px"><h2>Projection vs add-on tiers</h2><div class="kpi" id="kpi"></div><div id="bars" style="margin-top:14px"></div></div>
-<div class="card" style="margin-top:18px"><h2>Automation atlas (top consumers)</h2><table id="atlas"></table></div>
+</style><style>
+.shell{display:grid;grid-template-columns:220px 1fr;gap:16px;margin-top:4px}@media(max-width:820px){.shell{grid-template-columns:1fr}}
+.side{background:var(--card);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:14px;height:fit-content;position:sticky;top:12px}
+.side a{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-radius:10px;color:var(--ink);text-decoration:none;font-weight:500;margin:2px 0}
+.side a.on{background:var(--cocoa);color:#fff}.side a:hover:not(.on){background:var(--blush)}
+.badge{background:#C0392B;color:#fff;border-radius:99px;font-size:11px;padding:1px 7px}
+.who{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.cal .h{font-size:11px;font-weight:700;color:var(--mauve);text-align:center;letter-spacing:.08em}
+.day{min-height:92px;border:1px solid var(--line);border-radius:10px;padding:6px;background:rgba(255,255,255,.35);cursor:pointer;font-size:12px;overflow:hidden}
+[data-theme=dark] .day{background:rgba(255,255,255,.04)}.day:hover{outline:2px solid var(--sky)}.day.off{opacity:.4}.day.we{background:var(--blush)}.day.today{outline:2px solid var(--cocoa)}.day.sel{background:rgba(29,76,147,.18)}
+.ev{border-radius:5px;padding:1px 5px;margin-top:3px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
+.Vacation{background:#1D4C93}.Sick{background:#C27C0E}.Personal{background:#2E8B57}.Protected{background:#6B7A86}.Holiday{background:#89CDE7;color:#14384E}.pending{opacity:.6;border:1px dashed #fff}
+.toast{position:fixed;right:18px;bottom:18px;background:var(--cocoa);color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.2);opacity:0;transform:translateY(10px);transition:.25s;z-index:9;max-width:340px}.toast.show{opacity:1;transform:none}
+.modal{position:fixed;inset:0;background:rgba(10,30,45,.45);display:none;align-items:center;justify-content:center;z-index:8;padding:16px}.modal.show{display:flex}.modal .card{max-width:480px;width:100%;background:var(--bg1)}
+.row{display:flex;gap:10px}.row>*{flex:1}.legend span{margin-right:10px;font-size:12px}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:middle}
+.bar{background:var(--blush);border-radius:99px;height:8px;margin-top:4px}.bar div{height:8px;border-radius:99px;background:var(--cocoa)}
+</style><style></style></head><body><div class="wrap">
+<div class="topbar"><span class="brand">CAPACITY ATLAS · DEMO</span><span><button class="ghost" style="margin:0;padding:6px 12px" onclick="resetAll()">↺ Reset demo data</button> <button class="ghost" id="themeBtn" style="margin:0;padding:6px 12px" onclick="toggleTheme()">🌙 Dark</button></span></div>
+<div class="shell"><nav class="side"><a href="#/overview" data-r="overview">🏠 Overview <span class="badge" data-b="overview"></span></a>
+<a href="#/history" data-r="history">📊 Daily history <span class="badge" data-b="history"></span></a>
+<a href="#/tiers" data-r="tiers">💳 Plan & tiers <span class="badge" data-b="tiers"></span></a>
+<a href="#/inventory" data-r="inventory">🗂 Rule inventory <span class="badge" data-b="inventory"></span></a>
+<a href="#/migration" data-r="migration">📦 Migration planner <span class="badge" data-b="migration"></span></a>
+<a href="#/spaces" data-r="spaces">🧭 Spaces <span class="badge" data-b="spaces"></span></a>
+<a href="#/snapshots" data-r="snapshots">📸 Month-end snapshots <span class="badge" data-b="snapshots"></span></a>
+<a href="#/activity" data-r="activity">🔔 Activity <span class="badge" data-b="activity"></span></a></nav><main id="view"></main></div>
+<div class="modal" id="modal" onclick="if(event.target==this)closeM()"><div class="card" id="mbody"></div></div><div class="toast" id="toast"></div>
+<footer>Portfolio rebuild by <b>Nae Kitakado</b>, AI Automation Consultant · <a href="https://github.com/naekitakadoportfolio/automation-capacity-atlas">Source</a> · <a href="https://www.linkedin.com/in/nae-k-203194265">LinkedIn</a><br>All data is fictional. Changes are saved in your browser only.</footer></div>
 <script>
-const $=i=>document.getElementById(i);const BASE=25000,TIERS=[[0,0],[1000,19.99],[10000,99.99],[100000,299.99],[1000000,999.99]];
-const A=[["Status → sync subtasks",2,22,"webhook"],["Created → set defaults",3,14,"internal"],["Button → duplicate card",2,9,"webhook"],["Due date → notify owner",1,8,"external"],["Moved → set post text",2,7,"internal"],["Assignee → Slack ping",1,6,"external"],["Others (330 rules)",1.3,34,"mixed"]];
-const fmt=n=>Math.round(n).toLocaleString();
-function draw(){const used=+$("used").value,day=+$("day").value,mig=+$("mig").value/100,proj=used/day*30*(1-mig);
- const fit=TIERS.find(([a])=>BASE+a>=proj)||TIERS[TIERS.length-1],cur=TIERS[4],save=(cur[1]-fit[1])*12;
- $("kpi").innerHTML=`<div><b>${fmt(proj)}</b>projected actions / month</div><div><b>${fmt(BASE+fit[0])}</b>cheapest ceiling that fits</div><div><b>$${fit[1]}</b>/mo add-on</div><div><b>$${fmt(save)}</b>annual savings vs top tier</div>`;
- $("bars").innerHTML=TIERS.map(([a,p])=>{const cap=BASE+a,pc=Math.min(100,proj/cap*100);return`<div style="margin:6px 0"><div class="muted">+${fmt(a)} tier · cap ${fmt(cap)} · $${p}/mo</div><div style="background:var(--blush);border-radius:99px;height:14px"><div style="width:${pc}%;height:14px;border-radius:99px;background:${pc>=100?'#C0392B':'var(--cocoa)'}"></div></div></div>`}).join("");
- $("rec").innerHTML=`<p><b>${fit===cur?"Stay on the top tier":"Downgrade to the +"+fmt(fit[0])+" tier"}</b></p><p class="muted">Usage is projected at ${fmt(proj)} actions. ${proj>BASE+100000&&proj<BASE+1000000?"There is no tier between 125k and 1.025M, so migrating your heaviest rules off-platform is the lever. Try the slider.":"This tier covers projected usage with headroom."}</p><p class="muted">Counter resets on the 1st. Capture the official figure on the last day of each month.</p>`;
- $("atlas").innerHTML="<tr><th>Rule</th><th>Actions/run</th><th>Share</th><th>Type</th><th>Port candidate?</th></tr>"+A.map(([n,a,s,t])=>`<tr><td>${n}</td><td>${a}</td><td>${s}%</td><td>${t}</td><td>${t=='webhook'||t=='internal'?'<span class="pill low">yes</span>':'<span class="pill medium">review</span>'}</td></tr>`).join("")}
-draw();
-</script>
-<footer>Built by <b>Nae Kitakado</b>, AI Automation Consultant · <a href="https://github.com/naekitakadoportfolio">GitHub</a> · <a href="https://www.linkedin.com/in/nae-k-203194265">LinkedIn</a> · <a href="https://sider.ai/agents/web-creator/share/695ea81100a621619985fdfb">Portfolio</a><br>All data is fictional. This demo runs entirely in your browser.</footer></div></body></html>
+const BASE=25000,TIERS=[{a:0,p:0},{a:1000,p:19.99},{a:10000,p:99.99},{a:100000,p:299.99},{a:1000000,p:999.99}];
+const fmt=n=>Math.round(n).toLocaleString(),money=n=>"$"+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+function rng(s){return()=>{s=(s*9301+49297)%233280;return s/233280}}
+function SEED(){const r=rng(7),spaces=["Production","Creative","Sales","Ops"],types=["internal","webhook","external"];
+ const names=["Status → sync subtasks","Created → set defaults","Button → duplicate card","Due date → notify owner","Moved → set post text","Assignee → chat ping","Priority → escalate","Tag added → route to QA","Comment → notify lead","Closed → archive files","Created → apply template","Status → update phase","Field → copy to parent","Due soon → reminder","Created → assign coordinator","Subtask done → check parent","Moved → set headline","List change → set team","Status → post to channel","Form → create task","Recurring → weekly report","Blocked → alert manager","Approved → hand off","Reopened → reset fields","Time logged → update budget"];
+ const rules=names.map((n,i)=>({id:800+i*7,n,space:spaces[i%4],type:types[(i*5)%3],acts:[2,3,2,1,2,1,1,2,1,1,3,2,1,1,2,1,2,1,1,2,1,1,2,1,1][i],runs:Math.round((i<6?9000-i*1100:300+r()*2200)),on:true}));
+ const hist={};[["2026-08",219361],["2026-09",231004],["2026-10",224870]].forEach(([m,tot])=>{const d=[];let left=tot;for(let i=1;i<=(m=="2026-09"?30:31);i++){const v=Math.round(tot/30*(0.7+r()*0.6)*((new Date(m+"-"+String(i).padStart(2,"0")).getDay()%6)?1.1:0.5));d.push(v)}hist[m]=d});
+ const nov=[];for(let i=1;i<=5;i++)nov.push(Math.round(7600+r()*1800));hist["2026-11"]=nov;
+ return{rules,hist,tier:4,discount:10,migrate:{},month:"2026-10",snaps:[{m:"2026-08",v:219361,by:"Ops lead"},{m:"2026-09",v:231004,by:"Ops lead"},{m:"2026-10",v:224870,by:"Ops lead"}],
+ log:[{t:"Nov 1, 00:02",m:"🔄 Monthly counter reset · October snapshot captured (224,870)"}],filt:{q:"",space:"",type:"",sort:"use"}}}
+const use=r=>r.runs*r.acts,totalRules=()=>S.rules.reduce((a,r)=>a+use(r),0);
+function mtd(){return S.hist["2026-11"].reduce((a,b)=>a+b,0)}
+function projection(){const d=S.hist["2026-11"];return mtd()/d.length*30}
+function migSaved(){return S.rules.filter(r=>S.migrate[r.id]).reduce((a,r)=>a+use(r),0)/totalRules()}
+function fitTier(v){return TIERS.findIndex(t=>BASE+t.a>=v)}
+const price=i=>TIERS[i].p*(1-(i==S.tier?S.discount:0)/100);
+function bars(arr,max,h=160,lab){const w=Math.max(6,Math.floor(640/arr.length)-3);return`<svg viewBox="0 0 ${arr.length*(w+3)+10} ${h+24}" width="100%">${arr.map((v,i)=>{const bh=v/max*h;return`<rect x="${5+i*(w+3)}" y="${h-bh}" width="${w}" height="${bh}" rx="2" fill="#1D4C93" opacity="${.55+.45*v/max}"><title>${lab?lab(i):i+1}: ${fmt(v)}</title></rect>`}).join("")}<line x1="0" y1="${h}" x2="100%" y2="${h}" stroke="#89CDE7"/></svg>`}
+const V={};
+V.overview=()=>{const p=projection(),f=fitTier(p),cap=BASE+TIERS[S.tier].a,pc=Math.min(100,mtd()/cap*100);
+ return`<div class="hero"><span class="tag">NOVEMBER 2026 · DAY ${S.hist["2026-11"].length}</span><h1>Automation capacity</h1><p>Month-to-date usage against your plan, with a projection to month end. The counter resets on the 1st.</p></div>
+ <div class="card" style="margin-top:16px"><div class="kpi"><div><b>${fmt(mtd())}</b>actions month-to-date</div><div><b>${fmt(p)}</b>projected this month</div><div><b>${fmt(cap)}</b>current ceiling</div><div><b>${money(price(S.tier))}</b>/mo current add-on</div></div>
+ <label>Ceiling used</label><div class="bar"><div style="width:${pc}%"></div></div><p class="muted">${pc.toFixed(1)}% of ceiling used. Projected peak: ${(p/cap*100).toFixed(1)}%.</p></div>
+ <div class="grid"><div class="card"><h2>Recommendation</h2>${f<S.tier?`<p><b>Downgrade to the +${fmt(TIERS[f].a)} tier</b> to save ${money((price(S.tier)-TIERS[f].p)*12)}/yr.</p>`:`<p><b>Stay on the current tier.</b> No cheaper tier fits ${fmt(p)} actions.</p><p class="muted">There's no tier between 125k and 1.025M. Migrating your heaviest rules is the lever.</p><button onclick="go('migration')">Open migration planner</button>`}</div>
+ <div class="card"><h2>Top 5 consumers</h2><table>${[...S.rules].sort((a,b)=>use(b)-use(a)).slice(0,5).map(r=>`<tr><td>#${r.id} ${esc(r.n)}</td><td>${fmt(use(r))}</td></tr>`).join("")}</table><button class="ghost" onclick="go('inventory')">View all rules</button></div></div>`};
+V.history=()=>{const ms=Object.keys(S.hist),d=S.hist[S.month],max=Math.max(...d),tot=d.reduce((a,b)=>a+b,0);
+ return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">Daily usage history</h2><select style="width:auto" onchange="S.month=this.value;route()">${ms.map(m=>`<option ${m==S.month?"selected":""}>${m}</option>`).join("")}</select></div>
+ <div class="kpi" style="margin-top:12px"><div><b>${fmt(tot)}</b>total actions</div><div><b>${fmt(tot/d.length)}</b>daily average</div><div><b>${fmt(max)}</b>peak day</div><div><b>${d.indexOf(max)+1}</b>peak date</div></div>
+ <div style="margin-top:14px">${bars(d,max,160,i=>S.month+"-"+(i+1))}</div><p class="muted">Hover a bar for the exact count. Weekend usage drops because fewer tasks change status.</p></div>`};
+V.tiers=()=>{const p=projection()*(1-migSaved());
+ return`<div class="grid"><div class="card"><h2>Plan simulator</h2><label>Current add-on tier</label><select onchange="S.tier=+this.value;L('⚙️ Current tier set to +'+fmt(TIERS[this.value].a));route()">${TIERS.map((t,i)=>`<option value="${i}" ${i==S.tier?"selected":""}>+${fmt(t.a)} · ${money(t.p)}/mo</option>`).join("")}</select>
+ <label>Negotiated discount on current tier (%)</label><input type="number" min="0" max="50" value="${S.discount}" onchange="if(this.value<0||this.value>50){toast('Discount must be 0–50%');return}S.discount=+this.value;route()">
+ <p class="muted">Projection includes ${(migSaved()*100).toFixed(0)}% savings from rules marked for migration.</p></div>
+ <div class="card"><h2>Projected: ${fmt(p)} actions</h2>${TIERS.map((t,i)=>{const cap=BASE+t.a,pc=Math.min(100,p/cap*100),fits=cap>=p;return`<div style="margin:8px 0"><div style="display:flex;justify-content:space-between"><span>+${fmt(t.a)} · cap ${fmt(cap)}</span><span>${money(i==S.tier?price(i):t.p)}/mo ${fits?'<span class="pill low">fits</span>':'<span class="pill high">over</span>'}${i==S.tier?' <span class="pill medium">current</span>':''}</span></div><div class="bar"><div style="width:${pc}%;background:${fits?'':'#C0392B'}"></div></div></div>`}).join("")}</div></div>`};
+V.inventory=()=>{const f=S.filt;let rs=S.rules.filter(r=>(!f.q||r.n.toLowerCase().includes(f.q.toLowerCase())||String(r.id).includes(f.q))&&(!f.space||r.space==f.space)&&(!f.type||r.type==f.type));
+ rs.sort((a,b)=>f.sort=="use"?use(b)-use(a):f.sort=="runs"?b.runs-a.runs:a.id-b.id);const tot=totalRules();
+ return`<div class="card"><h2>Automation inventory (${S.rules.length} rules)</h2><div class="row"><input placeholder="Search name or #id" value="${esc(f.q)}" oninput="S.filt.q=this.value;clearTimeout(window._q);window._q=setTimeout(route,250)"><select onchange="S.filt.space=this.value;route()"><option value="">All spaces</option>${["Production","Creative","Sales","Ops"].map(s=>`<option ${s==f.space?"selected":""}>${s}</option>`).join("")}</select><select onchange="S.filt.type=this.value;route()"><option value="">All types</option>${["internal","webhook","external"].map(s=>`<option ${s==f.type?"selected":""}>${s}</option>`).join("")}</select><select onchange="S.filt.sort=this.value;route()"><option value="use" ${f.sort=="use"?"selected":""}>Sort: consumption</option><option value="runs" ${f.sort=="runs"?"selected":""}>Sort: runs</option><option value="id" ${f.sort=="id"?"selected":""}>Sort: rule #</option></select></div>
+ <table style="margin-top:10px"><tr><th>#</th><th>Rule</th><th>Space</th><th>Type</th><th>Runs/mo</th><th>Actions/run</th><th>Share</th><th>Status</th></tr>${rs.map(r=>`<tr><td>${r.id}</td><td><a href="javascript:ruleM(${r.id})">${esc(r.n)}</a></td><td>${r.space}</td><td>${r.type}</td><td>${fmt(r.runs)}</td><td>${r.acts}</td><td>${(use(r)/tot*100).toFixed(1)}%</td><td>${S.migrate[r.id]?'<span class="pill medium">migrating</span>':r.on?'<span class="pill low">active</span>':'<span class="pill high">paused</span>'}</td></tr>`).join("")}</table>${rs.length?"":"<p class='muted'>No rules match these filters.</p>"}</div>`};
+function ruleM(id){const r=S.rules.find(x=>x.id==id);openM(`<h2>Rule #${r.id}</h2><p><b>${esc(r.n)}</b></p><table><tr><th>Space</th><td>${r.space}</td></tr><tr><th>Type</th><td>${r.type}</td></tr><tr><th>Runs / month</th><td>${fmt(r.runs)}</td></tr><tr><th>Actions / run</th><td>${r.acts}</td></tr><tr><th>Actions / month</th><td><b>${fmt(use(r))}</b></td></tr></table>
+ <p class="muted">${r.type=="external"?"Calls an outside service, so review before porting.":"Good candidate to port to a webhook + script, which isn't metered."}</p>
+ <button onclick="S.migrate[${id}]=!S.migrate[${id}];L((S.migrate[${id}]?'📦 Marked':'↩️ Unmarked')+' #${id} for migration');closeM();route()">${S.migrate[id]?"Remove from migration":"Mark for migration"}</button> <button class="ghost" onclick="S.rules.find(x=>x.id==${id}).on=!${r.on};L('${r.on?"⏸ Paused":"▶️ Resumed"} #${id}');closeM();route()">${r.on?"Pause rule":"Resume rule"}</button> <button class="ghost" onclick="closeM()">Close</button>`)}
+V.migration=()=>{const tot=totalRules(),sel=S.rules.filter(r=>S.migrate[r.id]),saved=sel.reduce((a,r)=>a+use(r),0),p=projection(),after=p*(1-saved/tot),f=fitTier(after);
+ return`<div class="grid"><div class="card"><h2>Pick rules to port off-platform</h2><p class="muted">Webhook + script automations aren't billed as metered actions.</p><button class="ghost" style="margin-bottom:8px" onclick="[...S.rules].sort((a,b)=>use(b)-use(a)).filter(r=>r.type!='external').slice(0,8).forEach(r=>S.migrate[r.id]=true);L('📦 Auto-selected top 8 port candidates');route()">Auto-select top candidates</button> <button class="ghost" style="margin-bottom:8px" onclick="S.migrate={};route()">Clear</button>
+ <table>${[...S.rules].sort((a,b)=>use(b)-use(a)).map(r=>`<tr><td><input type="checkbox" style="width:auto" ${S.migrate[r.id]?"checked":""} onchange="S.migrate[${r.id}]=this.checked;route()"></td><td>#${r.id} ${esc(r.n)}</td><td>${r.type=="external"?'<span class="pill medium">review</span>':'<span class="pill low">port</span>'}</td><td>${fmt(use(r))}</td></tr>`).join("")}</table></div>
+ <div class="card"><h2>Impact</h2><div class="kpi"><div><b>${sel.length}</b>rules selected</div><div><b>${(saved/tot*100).toFixed(1)}%</b>of actions removed</div><div><b>${fmt(after)}</b>projected after</div></div>
+ <p style="margin-top:12px">${f<S.tier?`✅ Fits the <b>+${fmt(TIERS[f].a)}</b> tier → saves <b>${money((price(S.tier)-TIERS[f].p)*12)}/yr</b>`:`Still needs the current tier. Remove another ${fmt(after-(BASE+TIERS[3].a))} actions to fit +100,000.`}</p>
+ <button onclick="if(!${sel.length}){toast('Select at least one rule');return}L('📝 Migration plan exported: ${sel.length} rules');toast('Plan exported to the build backlog')">Export migration plan</button></div></div>`};
+V.spaces=()=>{const tot=totalRules(),sp={};S.rules.forEach(r=>{sp[r.space]=sp[r.space]||{n:0,a:0,ext:0};sp[r.space].n++;sp[r.space].a+=use(r);if(r.type=="external")sp[r.space].ext++});
+ return`<div class="card"><h2>Usage by space</h2><table><tr><th>Space</th><th>Rules</th><th>External calls</th><th>Actions/mo</th><th>Share</th></tr>${Object.entries(sp).sort((a,b)=>b[1].a-a[1].a).map(([k,v])=>`<tr><td>${k}</td><td>${v.n}</td><td>${v.ext}</td><td>${fmt(v.a)}</td><td style="width:35%">${(v.a/tot*100).toFixed(1)}%<div class="bar"><div style="width:${v.a/tot*100}%"></div></div></td></tr>`).join("")}</table>
+ <p class="muted">Folder- and list-level rules are counted under their parent space.</p></div>`};
+V.snapshots=()=>`<div class="grid"><div class="card"><h2>Month-end snapshots</h2><p class="muted">The official counter is month-to-date only, so capture it on the last day of each month to build history.</p><table><tr><th>Month</th><th>Official total</th><th>Change</th><th>Captured by</th></tr>${S.snaps.map((s,i)=>{const pr=S.snaps[i-1],c=pr?(s.v-pr.v)/pr.v*100:0;return`<tr><td>${s.m}</td><td>${fmt(s.v)}</td><td>${pr?`<span class="pill ${c<=0?'low':'medium'}">${c>0?'+':''}${c.toFixed(1)}%</span>`:'—'}</td><td>${esc(s.by)}</td></tr>`}).join("")}</table></div>
+ <div class="card"><h2>Record a snapshot</h2><label>Month</label><input type="month" id="sm" value="2026-11"><label>Official total</label><input type="number" id="sv" placeholder="e.g. 228000"><label>Captured by</label><input id="sb" value="Ops lead"><button onclick="snap()">Save snapshot</button></div></div>`;
+function snap(){const m=$("sm").value,v=+$("sv").value;if(!m||!(v>0))return toast("Enter a month and a positive total");if(S.snaps.some(s=>s.m==m))return toast("That month is already captured");S.snaps.push({m,v,by:$("sb").value||"—"});S.snaps.sort((a,b)=>a.m<b.m?-1:1);L(`📸 Snapshot saved for ${m}: ${fmt(v)}`);toast("Snapshot saved");route()}
+V.activity=()=>`<div class="card"><h2>Activity</h2>${S.log.map(l=>`<div style="padding:6px 0;border-bottom:1px solid var(--line)"><span class="muted">${l.t}</span> · ${l.m}</div>`).join("")||"<p class='muted'>No activity yet.</p>"}</div>`;
+function badge(r){if(r=="migration"){const n=Object.values(S.migrate).filter(Boolean).length;return n||""}return""}
+
+
+const $=i=>document.getElementById(i);const esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const KEY="atlasDemo";let S;try{S=JSON.parse(localStorage.getItem(KEY))||SEED()}catch(e){S=SEED()}if(!S.log)S.log=[];
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function toast(m){const t=$("toast");t.innerHTML=m;t.classList.add("show");clearTimeout(t._);t._=setTimeout(()=>t.classList.remove("show"),3000)}
+function L(m){S.log.unshift({t:new Date().toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}),m});if(S.log.length>200)S.log.length=200}
+function openM(h){$("mbody").innerHTML=h;$("modal").classList.add("show")}function closeM(){$("modal").classList.remove("show")}
+function go(r){location.hash="#/"+r}
+function route(){const r=(location.hash.replace("#/","").split("?")[0]||Object.keys(V)[0]);document.querySelectorAll(".side a").forEach(a=>a.classList.toggle("on",a.dataset.r==r));
+ try{$("view").innerHTML=(V[r]||V[Object.keys(V)[0]])()}catch(e){console.error(e);$("view").innerHTML='<div class="card"><h2>Something went wrong</h2><p class="muted">'+esc(e.message)+'</p></div>'}
+ document.querySelectorAll("[data-b]").forEach(b=>{const v=typeof badge=="function"?badge(b.dataset.b):"";b.textContent=v||"";b.style.display=v?"":"none"});
+ if(typeof onRoute=="function")onRoute(r);save()}
+function resetAll(){S=SEED();S.log=S.log||[];save();toast("Demo data reset");route()}
+function toggleTheme(){const h=document.documentElement,n=h.dataset.theme=="dark"?"light":"dark";h.dataset.theme=n;try{localStorage.setItem("demoTheme",n)}catch(e){}$("themeBtn").textContent=n=="dark"?"☀️ Light":"🌙 Dark"}
+try{const t=localStorage.getItem("demoTheme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.dataset.theme=t;$("themeBtn").textContent=t=="dark"?"☀️ Light":"🌙 Dark"}catch(e){}
+addEventListener("hashchange",route);addEventListener("keydown",e=>{if(e.key=="Escape")closeM()});route();
+
+</script></body></html>
